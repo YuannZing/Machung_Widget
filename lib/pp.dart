@@ -1,135 +1,366 @@
-import 'package:component/widgets/custom.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-class CustomButton extends StatefulWidget {
-  final String label; // Teks tombol
-  final VoidCallback onPressed; // Fungsi ketika tombol ditekan
-  final Color color; // Warna latar belakang tombol
-  final Color textColor; // Warna teks tombol
-  final double width; // Lebar tombol
-  final double height; // Tinggi tombol
-  final double fontSize; // Ukuran font
-  final double borderRadius; // Radius sudut tombol
-  final bool isDisabled; // Apakah tombol dinonaktifkan
-  final IconData? prefixIcon; // Ikon di depan teks
-  final IconData? suffixIcon; // Ikon di belakang teks
-  final IconData? icon; // Ikon yang akan ditampilkan
-  
-  final bool iconOnRight; // Apakah ikon ditampilkan di kanan teks
+enum TextFieldStyle { outlined, filled, standard }
 
-  const CustomButton({
+enum InputType { text, email, password, number, phone, url }
+
+class CustomTextField extends StatefulWidget {
+  final String label;
+  final TextEditingController controller;
+  final TextInputType keyboardType;
+  final String? Function(String?)? validator;
+  final TextFieldStyle style;
+  final Widget? prefix;
+  final Widget? suffix;
+  final bool isPassword;
+  final bool isReadOnly;
+  final bool isDisabled;
+  final String? helperText;
+  final int? maxChar;
+  final bool showCharCount;
+  final List<TextInputFormatter>? inputFormatters;
+  final InputType inputType;
+
+  const CustomTextField({
     Key? key,
     required this.label,
-    required this.onPressed,
-    this.color = primary, // Default warna biru
-    this.textColor = Colors.white, // Default warna teks putih
-    this.width = 150.0, // Default lebar tombol
-    this.height = 40.0, // Default tinggi tombol
-    this.fontSize = 14.0, // Default ukuran font
-    this.borderRadius = 10.0, // Default radius sudut
-    this.isDisabled = false, // Default tidak dinonaktifkan
-    this.icon, // Ikon opsional
-    this.prefixIcon, // Ikon di depan teks opsional
-    this.suffixIcon, // Ikon di belakang teks opsional
-    this.iconOnRight = false, // Default ikon di kiri teks
+    required this.controller,
+    this.keyboardType = TextInputType.text,
+    this.validator,
+    this.style = TextFieldStyle.standard,
+    this.prefix,
+    this.suffix,
+    this.isPassword = false,
+    this.isReadOnly = false,
+    this.isDisabled = false,
+    this.helperText,
+    this.maxChar,
+    this.showCharCount = true,
+    this.inputFormatters,
+    this.inputType = InputType.text,
   }) : super(key: key);
 
   @override
-  _CustomButtonState createState() => _CustomButtonState();
+  _CustomTextFieldState createState() => _CustomTextFieldState();
 }
 
-class _CustomButtonState extends State<CustomButton> {
-  bool _isPressed = false;
+class _CustomTextFieldState extends State<CustomTextField> {
+  late FocusNode _focusNode;
+  bool _isFocused = false;
+  bool _isObscured = false;
+  String? _errorMessage;
 
   @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode();
 
-  Widget build(BuildContext context) {
-      /// Fungsi untuk membuat warna menjadi lebih terang
-  Color _brighten(Color color, double factor) {
-    assert(factor >= 0 && factor <= 1, 'Factor must be between 0 and 1');
-    final hsl = HSLColor.fromColor(color);
-    final HSLColor brightened = hsl.withLightness(
-      (hsl.lightness + factor).clamp(0.0, 0.8),
-    );
-    return brightened.toColor();
+    _focusNode.addListener(() {
+      if (!_focusNode.hasFocus) {
+        _validateField();
+      }
+      setState(() {
+        _isFocused = _focusNode.hasFocus;
+      });
+    });
+
+    _isObscured = widget.isPassword;
   }
-    // Menghitung warna tombol ketika ditekan (lebih terang)
-    final Color brightenedColor = _brighten(widget.color, 0.6);
 
-    // Ukuran ikon lebih besar 1.5x dari ukuran font
-    final double iconSize = widget.fontSize * 1.75;
+  @override
+  void didUpdateWidget(covariant CustomTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isPassword != oldWidget.isPassword) {
+      setState(() {
+        _isObscured = widget.isPassword;
+      });
+    }
+  }
 
-    return GestureDetector(
-      onTapDown: (_) {
-        if (!widget.isDisabled) {
-          setState(() {
-            _isPressed = true;
-          });
-        }
-      },
-      onTapUp: (_) {
-        if (!widget.isDisabled) {
-          setState(() {
-            _isPressed = false;
-          });
-          widget.onPressed();
-        }
-      },
-      onTapCancel: () {
-        if (!widget.isDisabled) {
-          setState(() {
-            _isPressed = false;
-          });
-        }
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        height: widget.height,
-        width: widget.width,
-        decoration: BoxDecoration(
-          color: widget.isDisabled
-              ? disable
-              : _isPressed
-                  ? brightenedColor
-                  : widget.color,
-          borderRadius: BorderRadius.circular(widget.borderRadius),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            if (widget.icon != null && !widget.iconOnRight) // Ikon di kiri
-              Icon(
-                widget.icon,
-                color: _isPressed ? widget.color : widget.textColor,
-                size: iconSize,
-              ),
-            if (widget.icon != null && !widget.iconOnRight)
-              const SizedBox(width: 8.0), // Jarak antara ikon dan teks
-            Text(
-              widget.label,
-              style: TextStyle(
-                color: widget.isDisabled
-                    ? Color.fromRGBO(90, 135, 155, 1)
-                    : _isPressed
-                        ? widget.textColor
-                        : widget.textColor,
-                fontSize: widget.fontSize,
-                fontWeight: FontWeight.w500,
-              ),
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _validateField() {
+    if (widget.validator != null) {
+      final error = widget.validator!(widget.controller.text);
+      setState(() {
+        _errorMessage = error;
+      });
+    }
+  }
+
+  String? Function(String?) _getValidator(InputType inputType) {
+    // if (widget.validator != null) return widget.validator!;
+
+    switch (inputType) {
+      case InputType.email:
+        return _emailValidator;
+      case InputType.password:
+        return _passwordValidator;
+      case InputType.number:
+        return _numberValidator;
+      case InputType.phone:
+        return _phoneValidator;
+      case InputType.url:
+        return _urlValidator;
+      default:
+        return _defaultValidator;
+    }
+  }
+
+  // Email Validator
+  String? _emailValidator(String? value) {
+    final emailPattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
+    final regex = RegExp(emailPattern);
+    if (value == null || value.isEmpty) {
+      return 'This field is required.';
+    }
+    if (!regex.hasMatch(value)) {
+      return 'Please enter a valid email address.';
+    }
+    return null;
+  }
+
+  // Password Validator
+  String? _passwordValidator(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'This field is required.';
+    }
+    if (value.length < 6) {
+      return 'Password must be at least 6 characters.';
+    }
+    return null;
+  }
+
+  // Number Validator
+  String? _numberValidator(String? value) {
+    final numberPattern = r'^\d+$';
+    final regex = RegExp(numberPattern);
+    if (value == null || value.isEmpty) {
+      return 'This field is required.';
+    }
+    if (!regex.hasMatch(value)) {
+      return 'Please enter a valid number.';
+    }
+    return null;
+  }
+
+  // Phone Validator
+  String? _phoneValidator(String? value) {
+    final phonePattern = r'^\+?[0-9]{7,15}$';
+    final regex = RegExp(phonePattern);
+    if (value == null || value.isEmpty) {
+      return 'This field is required.';
+    }
+    if (!regex.hasMatch(value)) {
+      return 'Please enter a valid phone number.';
+    }
+    return null;
+  }
+
+  // URL Validator
+  String? _urlValidator(String? value) {
+    final urlPattern = r'^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$';
+    final regex = RegExp(urlPattern);
+    if (value == null || value.isEmpty) {
+      return 'This field is required.';
+    }
+    if (!regex.hasMatch(value)) {
+      return 'Please enter a valid URL.';
+    }
+    return null;
+  }
+
+  // Default Validator
+  String? _defaultValidator(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'This field is required.';
+    }
+    return null;
+  }
+
+  // Menentukan keyboard type berdasarkan inputType
+  TextInputType _getKeyboardType(InputType inputType) {
+    switch (inputType) {
+      case InputType.email:
+        return TextInputType.emailAddress;
+      case InputType.number:
+        return TextInputType.number;
+      case InputType.phone:
+        return TextInputType.phone;
+      case InputType.url:
+        return TextInputType.url;
+      default:
+        return TextInputType.text;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Color activeColor = Colors.blue;
+    final Color inactiveColor = Colors.grey;
+    final Color errorColor = Colors.red;
+
+    final bool isDisabled = widget.isDisabled;
+    final bool showCharCount = widget.showCharCount;
+
+    InputDecoration inputDecoration;
+    switch (widget.style) {
+      case TextFieldStyle.outlined:
+        inputDecoration = InputDecoration(
+          labelText: widget.label,
+          labelStyle: TextStyle(
+            color: _errorMessage != null
+                ? Colors.red
+                : (isDisabled
+                    ? Colors.grey
+                    : (_isFocused ? activeColor : inactiveColor)),
+          ),
+          floatingLabelBehavior: FloatingLabelBehavior.auto,
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10.0),
+            borderSide: BorderSide(color: activeColor, width: 2.0),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10.0),
+            borderSide: BorderSide(
+              color: isDisabled ? Colors.grey : inactiveColor,
+              width: 1.0,
             ),
-            if (widget.icon != null && widget.iconOnRight)
-              const SizedBox(width: 8.0), // Jarak antara teks dan ikon
-            if (widget.icon != null && widget.iconOnRight) // Ikon di kanan
-              Icon(
-                widget.icon,
-                color: _isPressed ? widget.color : widget.textColor,
-                size: iconSize,
-              ),
-          ],
-        ),
-      ),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10.0),
+            borderSide: BorderSide(color: Colors.red, width: 2.0),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10.0),
+            borderSide: BorderSide(color: Colors.red, width: 2.0),
+          ),
+          errorText: _errorMessage,
+          prefixIcon: widget.prefix,
+          suffixIcon: widget.inputType == InputType.password
+              ? IconButton(
+                  icon: Icon(
+                    _isObscured ? Icons.visibility : Icons.visibility_off,
+                    color: isDisabled ? Colors.grey : Colors.black54,
+                  ),
+                  onPressed: isDisabled
+                      ? null
+                      : () {
+                          setState(() {
+                            _isObscured = !_isObscured;
+                          });
+                        },
+                )
+              : widget.suffix,
+          helperText: widget.helperText,
+          helperStyle: TextStyle(color: Colors.grey[600], fontSize: 12),
+        );
+        break;
+      case TextFieldStyle.filled:
+        inputDecoration = InputDecoration(
+          labelText: widget.label,
+          labelStyle: TextStyle(
+            color: _errorMessage != null
+                ? Colors.red
+                : (isDisabled
+                    ? Colors.grey
+                    : (_isFocused ? activeColor : inactiveColor)),
+          ),
+          floatingLabelBehavior: FloatingLabelBehavior.auto,
+          filled: true,
+          fillColor: isDisabled ? Colors.grey[300] : Colors.grey[200],
+          isDense: true,
+          contentPadding: EdgeInsets.fromLTRB(12, 10, 12, 8),
+          focusedBorder: UnderlineInputBorder(
+            borderSide: BorderSide(color: activeColor, width: 2.0),
+          ),
+          enabledBorder: UnderlineInputBorder(
+            borderSide: BorderSide(
+              color: isDisabled ? Colors.grey : inactiveColor,
+              width: 1.0,
+            ),
+          ),
+          errorText: _errorMessage,
+          prefixIcon: widget.prefix,
+          suffixIcon: widget.isPassword
+              ? IconButton(
+                  icon: Icon(
+                    _isObscured ? Icons.visibility : Icons.visibility_off,
+                    color: isDisabled ? Colors.grey : Colors.black54,
+                  ),
+                  onPressed: isDisabled
+                      ? null
+                      : () {
+                          setState(() {
+                            _isObscured = !_isObscured;
+                          });
+                        },
+                )
+              : widget.suffix,
+          helperText: widget.helperText,
+          helperStyle: TextStyle(color: Colors.grey[600], fontSize: 12),
+        );
+        break;
+      case TextFieldStyle.standard:
+        inputDecoration = InputDecoration(
+          labelText: widget.label,
+          labelStyle: TextStyle(
+            color: _errorMessage != null
+                ? Colors.red
+                : (isDisabled
+                    ? Colors.grey
+                    : (_isFocused ? activeColor : inactiveColor)),
+          ),
+          floatingLabelBehavior: FloatingLabelBehavior.auto,
+          focusedBorder: UnderlineInputBorder(
+            borderSide: BorderSide(color: activeColor, width: 2.0),
+          ),
+          enabledBorder: UnderlineInputBorder(
+            borderSide: BorderSide(
+              color: isDisabled ? Colors.grey : inactiveColor,
+              width: 1.0,
+            ),
+          ),
+          errorText: _errorMessage,
+          prefixIcon: widget.prefix,
+          suffixIcon: widget.isPassword
+              ? IconButton(
+                  icon: Icon(
+                    _isObscured ? Icons.visibility : Icons.visibility_off,
+                    color: isDisabled ? Colors.grey : Colors.black54,
+                  ),
+                  onPressed: isDisabled
+                      ? null
+                      : () {
+                          setState(() {
+                            _isObscured = !_isObscured;
+                          });
+                        },
+                )
+              : widget.suffix,
+          helperText: widget.helperText,
+          helperStyle: TextStyle(color: Colors.grey[600], fontSize: 12),
+        );
+        break;
+    }
+
+    return TextFormField(
+      controller: widget.controller,
+      focusNode: _focusNode,
+      readOnly: widget.isReadOnly,
+      enabled: !widget.isDisabled,
+      maxLength: widget.maxChar,
+      inputFormatters: widget.inputFormatters,
+      keyboardType: _getKeyboardType(widget.inputType),
+      obscureText: _isObscured,
+      validator: _getValidator(widget.inputType),
+      decoration: inputDecoration,
     );
+
   }
 }

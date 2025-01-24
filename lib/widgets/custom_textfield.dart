@@ -1,18 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-enum TextFieldStyle { outlined, filled, standard } // Jenis TextField
+enum TextFieldStyle { outlined, filled, standard }
+
+enum InputType { text, email, password, number, phone, url }
 
 class CustomTextField extends StatefulWidget {
   final String label;
   final TextEditingController controller;
-  final TextInputType keyboardType; // Jenis input (default: teks)
+  final TextInputType keyboardType;
   final String? Function(String?)? validator;
-  final TextFieldStyle style; // Gaya TextField
-  final Widget? prefix; // Tambahan untuk prefix
-  final Widget? suffix; // Tambahan untuk suffix
-  final bool isPassword; // Apakah input untuk password
-  final bool isReadOnly; // Mode read-only
-  final bool isDisabled; // Mode disabled
+  final TextFieldStyle style;
+  final Widget? prefix;
+  final Widget? suffix;
+  final bool isPassword;
+  final bool isReadOnly;
+  final bool isDisabled;
+  final String? helperText;
+  final int? maxChar;
+  final bool showCharCount;
+  final List<TextInputFormatter>? inputFormatters;
+  final InputType inputType;
+  final bool isRequired;
 
   const CustomTextField({
     Key? key,
@@ -20,12 +29,18 @@ class CustomTextField extends StatefulWidget {
     required this.controller,
     this.keyboardType = TextInputType.text,
     this.validator,
-    this.style = TextFieldStyle.standard, // Default ke gaya standard
+    this.style = TextFieldStyle.standard,
     this.prefix,
     this.suffix,
-    this.isPassword = false, // Default bukan password
-    this.isReadOnly = false, // Default tidak read-only
-    this.isDisabled = false, // Default tidak disabled
+    this.isPassword = false,
+    this.isReadOnly = false,
+    this.isDisabled = false,
+    this.helperText,
+    this.maxChar,
+    this.showCharCount = true,
+    this.inputFormatters,
+    this.inputType = InputType.text,
+    this.isRequired = false, // Default nilai isRequired
   }) : super(key: key);
 
   @override
@@ -35,45 +50,157 @@ class CustomTextField extends StatefulWidget {
 class _CustomTextFieldState extends State<CustomTextField> {
   late FocusNode _focusNode;
   bool _isFocused = false;
-  bool _isObscured = false; // Untuk menampilkan/menyembunyikan password
+  bool _isObscured = false;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
     _focusNode = FocusNode();
+
     _focusNode.addListener(() {
+      if (!_focusNode.hasFocus) {
+        // Trigger validation when focus is lost
+        _validateField();
+      }
       setState(() {
         _isFocused = _focusNode.hasFocus;
       });
     });
-    _isObscured = widget.isPassword; // Default menyembunyikan password
+
+    _isObscured = widget.isPassword;
   }
 
-  @override
-  void dispose() {
-    _focusNode.dispose();
-    super.dispose();
+  void _validateField() {
+    if (widget.isRequired || widget.validator != null) {
+      final error = _getValidator(widget.inputType)(widget.controller.text);
+      setState(() {
+        _errorMessage = error;
+      });
+    }
+  }
+
+  String? Function(String?) _getValidator(InputType inputType) {
+    if (widget.validator != null) return widget.validator!;
+
+    switch (inputType) {
+      case InputType.email:
+        return _emailValidator;
+      case InputType.password:
+        return _passwordValidator;
+      case InputType.number:
+        return _numberValidator;
+      case InputType.phone:
+        return _phoneValidator;
+      case InputType.url:
+        return _urlValidator;
+      default:
+        return _defaultValidator;
+    }
+  }
+
+  // Validators
+  String? _emailValidator(String? value) {
+    final emailPattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
+    final regex = RegExp(emailPattern);
+    if (value == null || value.isEmpty) {
+      return 'This field is required.';
+    }
+    if (!regex.hasMatch(value)) {
+      return 'Please enter a valid email address.';
+    }
+    return null;
+  }
+
+  String? _passwordValidator(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'This field is required.';
+    }
+    if (value.length < 6) {
+      return 'Password must be at least 6 characters.';
+    }
+    return null;
+  }
+
+  String? _numberValidator(String? value) {
+    final numberPattern = r'^\d+$';
+    final regex = RegExp(numberPattern);
+    if (value == null || value.isEmpty) {
+      return 'This field is required.';
+    }
+    if (!regex.hasMatch(value)) {
+      return 'Please enter a valid number.';
+    }
+    return null;
+  }
+
+  String? _phoneValidator(String? value) {
+    final phonePattern = r'^\+?[0-9]{7,15}$';
+    final regex = RegExp(phonePattern);
+    if (value == null || value.isEmpty) {
+      return 'This field is required.';
+    }
+    if (!regex.hasMatch(value)) {
+      return 'Please enter a valid phone number.';
+    }
+    return null;
+  }
+
+  String? _urlValidator(String? value) {
+    final urlPattern = r'^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$';
+    final regex = RegExp(urlPattern);
+    if (value == null || value.isEmpty) {
+      return 'This field is required.';
+    }
+    if (!regex.hasMatch(value)) {
+      return 'Please enter a valid URL.';
+    }
+    return null;
+  }
+
+  String? _defaultValidator(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'This field is required.';
+    }
+    return null;
+  }
+
+  // Menentukan keyboard type berdasarkan inputType
+  TextInputType _getKeyboardType(InputType inputType) {
+    switch (inputType) {
+      case InputType.email:
+        return TextInputType.emailAddress;
+      case InputType.number:
+        return TextInputType.number;
+      case InputType.phone:
+        return TextInputType.phone;
+      case InputType.url:
+        return TextInputType.url;
+      default:
+        return TextInputType.text;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Warna border aktif dan tidak aktif
     final Color activeColor = Colors.blue;
     final Color inactiveColor = Colors.grey;
+    final Color errorColor = Colors.red;
 
-    // Tentukan apakah TextField dalam keadaan disabled
     final bool isDisabled = widget.isDisabled;
+    final bool showCharCount = widget.showCharCount;
 
-    // Sesuaikan InputDecoration berdasarkan gaya
     InputDecoration inputDecoration;
     switch (widget.style) {
       case TextFieldStyle.outlined:
         inputDecoration = InputDecoration(
           labelText: widget.label,
           labelStyle: TextStyle(
-            color: isDisabled
-                ? Colors.grey // Warna label untuk mode disabled
-                : (_isFocused ? activeColor : inactiveColor),
+            color: _errorMessage != null
+                ? Colors.red
+                : (isDisabled
+                    ? Colors.grey
+                    : (_isFocused ? activeColor : inactiveColor)),
           ),
           floatingLabelBehavior: FloatingLabelBehavior.auto,
           focusedBorder: OutlineInputBorder(
@@ -87,8 +214,17 @@ class _CustomTextFieldState extends State<CustomTextField> {
               width: 1.0,
             ),
           ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10.0),
+            borderSide: BorderSide(color: Colors.red, width: 2.0),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10.0),
+            borderSide: BorderSide(color: Colors.red, width: 2.0),
+          ),
+          errorText: _errorMessage,
           prefixIcon: widget.prefix,
-          suffixIcon: widget.isPassword
+          suffixIcon: widget.inputType == InputType.password
               ? IconButton(
                   icon: Icon(
                     _isObscured ? Icons.visibility : Icons.visibility_off,
@@ -103,16 +239,19 @@ class _CustomTextFieldState extends State<CustomTextField> {
                         },
                 )
               : widget.suffix,
+          helperText: widget.helperText,
+          helperStyle: TextStyle(color: Colors.grey[600], fontSize: 12),
         );
         break;
       case TextFieldStyle.filled:
         inputDecoration = InputDecoration(
           labelText: widget.label,
           labelStyle: TextStyle(
-            color: isDisabled
-                ? Colors.grey
-                : (_isFocused ? activeColor : inactiveColor),
-            fontSize: _isFocused ? 14 : 16,
+            color: _errorMessage != null
+                ? Colors.red
+                : (isDisabled
+                    ? Colors.grey
+                    : (_isFocused ? activeColor : inactiveColor)),
           ),
           floatingLabelBehavior: FloatingLabelBehavior.auto,
           filled: true,
@@ -128,8 +267,9 @@ class _CustomTextFieldState extends State<CustomTextField> {
               width: 1.0,
             ),
           ),
+          errorText: _errorMessage,
           prefixIcon: widget.prefix,
-          suffixIcon: widget.isPassword
+          suffixIcon: widget.inputType == InputType.password
               ? IconButton(
                   icon: Icon(
                     _isObscured ? Icons.visibility : Icons.visibility_off,
@@ -144,15 +284,19 @@ class _CustomTextFieldState extends State<CustomTextField> {
                         },
                 )
               : widget.suffix,
+          helperText: widget.helperText,
+          helperStyle: TextStyle(color: Colors.grey[600], fontSize: 12),
         );
         break;
       case TextFieldStyle.standard:
         inputDecoration = InputDecoration(
           labelText: widget.label,
           labelStyle: TextStyle(
-            color: isDisabled
-                ? Colors.grey
-                : (_isFocused ? activeColor : inactiveColor),
+            color: _errorMessage != null
+                ? Colors.red
+                : (isDisabled
+                    ? Colors.grey
+                    : (_isFocused ? activeColor : inactiveColor)),
           ),
           floatingLabelBehavior: FloatingLabelBehavior.auto,
           focusedBorder: UnderlineInputBorder(
@@ -164,8 +308,9 @@ class _CustomTextFieldState extends State<CustomTextField> {
               width: 1.0,
             ),
           ),
+          errorText: _errorMessage,
           prefixIcon: widget.prefix,
-          suffixIcon: widget.isPassword
+          suffixIcon: widget.inputType == InputType.password
               ? IconButton(
                   icon: Icon(
                     _isObscured ? Icons.visibility : Icons.visibility_off,
@@ -180,6 +325,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
                         },
                 )
               : widget.suffix,
+          helperText: widget.helperText,
+          helperStyle: TextStyle(color: Colors.grey[600], fontSize: 12),
         );
         break;
     }
@@ -187,12 +334,18 @@ class _CustomTextFieldState extends State<CustomTextField> {
     return TextFormField(
       controller: widget.controller,
       focusNode: _focusNode,
-      keyboardType: widget.keyboardType,
-      obscureText: _isObscured, // Untuk menyembunyikan teks jika password
+      readOnly: widget.isReadOnly,
+      enabled: !widget.isDisabled,
+      maxLength: widget.maxChar,
+      inputFormatters: widget.inputFormatters,
+      keyboardType: _getKeyboardType(widget.inputType),
+      obscureText: _isObscured,
+      onChanged: (_) {
+        if (widget.isRequired) {
+          _validateField();
+        }
+      },
       decoration: inputDecoration,
-      validator: widget.validator,
-      readOnly: widget.isReadOnly, // Untuk mode read-only
-      enabled: !widget.isDisabled, // Untuk mode disabled
     );
   }
 }

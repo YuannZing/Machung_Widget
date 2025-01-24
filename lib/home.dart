@@ -142,6 +142,7 @@ class _CounterScreenState extends State<CounterScreen> {
                         style: TextFieldStyle.filled, // Mengatur gaya input
                       ),
                       SizedBox(height: 16.0),
+
                       CustomTextField(
                         label: 'Outlined with Prefix & Suffix',
                         controller: TextEditingController(),
