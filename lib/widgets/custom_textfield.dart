@@ -1,3 +1,4 @@
+import 'package:component/widgets/custom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -22,6 +23,7 @@ class CustomTextField extends StatefulWidget {
   final List<TextInputFormatter>? inputFormatters;
   final InputType inputType;
   final bool isRequired;
+  final Color? errorColor;
 
   const CustomTextField({
     Key? key,
@@ -41,6 +43,7 @@ class CustomTextField extends StatefulWidget {
     this.inputFormatters,
     this.inputType = InputType.text,
     this.isRequired = false, // Default nilai isRequired
+    this.errorColor,
   }) : super(key: key);
 
   @override
@@ -68,7 +71,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
       });
     });
 
-    _isObscured = widget.isPassword;
+    _isObscured = widget.inputType == InputType.password;
   }
 
   void _validateField() {
@@ -114,7 +117,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
   String? _passwordValidator(String? value) {
     if (value == null || value.isEmpty) {
-      return 'This field is required.';
+      return 'Password cannot be empty.';
     }
     if (value.length < 6) {
       return 'Password must be at least 6 characters.';
@@ -160,7 +163,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
   String? _defaultValidator(String? value) {
     if (value == null || value.isEmpty) {
-      return 'This field is required.';
+      final labels = widget.label;
+      return '$labels cannot be empty.';
     }
     return null;
   }
@@ -183,9 +187,9 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
   @override
   Widget build(BuildContext context) {
-    final Color activeColor = Colors.blue;
-    final Color inactiveColor = Colors.grey;
-    final Color errorColor = Colors.red;
+    final Color activeColor = Colors.white;
+    final Color inactiveColor = Colors.white;
+    final Color errorColor = widget.errorColor ?? danger;
 
     final bool isDisabled = widget.isDisabled;
     final bool showCharCount = widget.showCharCount;
@@ -194,10 +198,13 @@ class _CustomTextFieldState extends State<CustomTextField> {
     switch (widget.style) {
       case TextFieldStyle.outlined:
         inputDecoration = InputDecoration(
+          counterStyle: TextStyle(
+              color: _errorMessage != null ? errorColor : activeColor),
           labelText: widget.label,
           labelStyle: TextStyle(
+            fontWeight: FontWeight.bold,
             color: _errorMessage != null
-                ? Colors.red
+                ? errorColor
                 : (isDisabled
                     ? Colors.grey
                     : (_isFocused ? activeColor : inactiveColor)),
@@ -216,11 +223,11 @@ class _CustomTextFieldState extends State<CustomTextField> {
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10.0),
-            borderSide: BorderSide(color: Colors.red, width: 2.0),
+            borderSide: BorderSide(color: errorColor, width: 2.0),
           ),
           focusedErrorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10.0),
-            borderSide: BorderSide(color: Colors.red, width: 2.0),
+            borderSide: BorderSide(color: errorColor, width: 2.0),
           ),
           errorText: _errorMessage,
           prefixIcon: widget.prefix,
@@ -245,10 +252,14 @@ class _CustomTextFieldState extends State<CustomTextField> {
         break;
       case TextFieldStyle.filled:
         inputDecoration = InputDecoration(
+          counterStyle: TextStyle(
+              color: _errorMessage != null ? errorColor : activeColor),
           labelText: widget.label,
           labelStyle: TextStyle(
+            fontWeight: FontWeight.bold,
+
             color: _errorMessage != null
-                ? Colors.red
+                ? errorColor
                 : (isDisabled
                     ? Colors.grey
                     : (_isFocused ? activeColor : inactiveColor)),
@@ -290,17 +301,21 @@ class _CustomTextFieldState extends State<CustomTextField> {
         break;
       case TextFieldStyle.standard:
         inputDecoration = InputDecoration(
+          counterStyle: TextStyle(
+              color: _errorMessage != null ? errorColor : activeColor),
           labelText: widget.label,
           labelStyle: TextStyle(
+            fontWeight: FontWeight.bold,
+
             color: _errorMessage != null
-                ? Colors.red
+                ? errorColor
                 : (isDisabled
                     ? Colors.grey
                     : (_isFocused ? activeColor : inactiveColor)),
           ),
           floatingLabelBehavior: FloatingLabelBehavior.auto,
           focusedBorder: UnderlineInputBorder(
-            borderSide: BorderSide(color: activeColor, width: 2.0),
+            borderSide: BorderSide(color: activeColor, width: 1.0),
           ),
           enabledBorder: UnderlineInputBorder(
             borderSide: BorderSide(
@@ -309,12 +324,15 @@ class _CustomTextFieldState extends State<CustomTextField> {
             ),
           ),
           errorText: _errorMessage,
+          focusedErrorBorder: UnderlineInputBorder(borderSide: BorderSide(color: errorColor, width: 1.0)),
+          errorBorder: UnderlineInputBorder(borderSide: BorderSide(color: errorColor, width: 1.0)),
+          errorStyle: TextStyle(color: errorColor),
           prefixIcon: widget.prefix,
           suffixIcon: widget.inputType == InputType.password
               ? IconButton(
                   icon: Icon(
                     _isObscured ? Icons.visibility : Icons.visibility_off,
-                    color: isDisabled ? Colors.grey : Colors.black54,
+                    color: isDisabled ? Colors.grey : _errorMessage != null ? errorColor : activeColor,
                   ),
                   onPressed: isDisabled
                       ? null
@@ -326,26 +344,41 @@ class _CustomTextFieldState extends State<CustomTextField> {
                 )
               : widget.suffix,
           helperText: widget.helperText,
-          helperStyle: TextStyle(color: Colors.grey[600], fontSize: 12),
+          helperStyle: TextStyle(color: activeColor, fontSize: 12),
         );
         break;
     }
 
-    return TextFormField(
-      controller: widget.controller,
-      focusNode: _focusNode,
-      readOnly: widget.isReadOnly,
-      enabled: !widget.isDisabled,
-      maxLength: widget.maxChar,
-      inputFormatters: widget.inputFormatters,
-      keyboardType: _getKeyboardType(widget.inputType),
-      obscureText: _isObscured,
-      onChanged: (_) {
-        if (widget.isRequired) {
-          _validateField();
-        }
-      },
-      decoration: inputDecoration,
+    return Theme(
+      data: Theme.of(context).copyWith(
+        textSelectionTheme: TextSelectionThemeData(
+          selectionHandleColor:
+              activeColor, // Ganti dengan warna yang diinginkan
+        ),
+      ),
+      child: TextFormField(
+        controller: widget.controller,
+        focusNode: _focusNode,
+        readOnly: widget.isReadOnly,
+        enabled: !widget.isDisabled,
+        maxLength: widget.maxChar,
+        inputFormatters: widget.inputFormatters,
+        keyboardType: _getKeyboardType(widget.inputType),
+        cursorColor: _isFocused ? activeColor : inactiveColor,
+        cursorWidth: 0.5,
+        obscureText: _isObscured,
+        style: TextStyle(
+          color:
+              _isFocused ? activeColor : inactiveColor, // Warna teks saat aktif
+          fontSize: 16.0,
+        ),
+        onChanged: (_) {
+          if (widget.isRequired) {
+            _validateField();
+          }
+        },
+        decoration: inputDecoration,
+      ),
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'package:component/widgets/custom.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -106,48 +107,47 @@ class CustomCard extends StatelessWidget {
                       ),
                     ),
                   SizedBox(width: 12),
-                  Expanded(
-                    child: _buildTextContent(),
-                  ),
                 ],
               )
             else
               _buildTextContent(),
             if (links != null && links!.isNotEmpty) ...[
-              Divider(color: Colors.grey[300]),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                padding: EdgeInsets.only(left: padding.horizontal / 2, top: 0, bottom: padding.vertical / 2),
                 child: Wrap(
-                  spacing: 8.0,
+                  spacing: 12.0,
+                  alignment: WrapAlignment.start,
+                  crossAxisAlignment: WrapCrossAlignment.start,
                   children: links!.map((link) {
-                    return ElevatedButton(
-                      onPressed: () async {
-                        // Ambil URL dari map link dan pastikan tidak null
+                    return GestureDetector(
+                      onTap: () async {
                         final url = link['linkurl'];
-
-                        // Pastikan nilai URL valid
                         if (url != null && url.isNotEmpty) {
-                          final Uri uri = Uri.parse(url); // Parsing URL ke Uri
-                          print(
-                              'Attempting to launch URL: $url'); // Log URL yang akan diluncurkan
-                          launchUrl(
-                            uri,
-                            mode: LaunchMode
-                                .externalApplication, // Buka di aplikasi eksternal
-                          );
+                          final Uri uri = Uri.parse(url);
+                          print('Attempting to launch URL: $url');
+                          launchUrl(uri, mode: LaunchMode.externalApplication);
                         }
                       },
-                      child: Chip(
-                        label: Text(
-                          link['title']!,
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        backgroundColor: Colors.blue,
+                      child: StatefulBuilder(
+                        builder: (context, setState) {
+                          bool isPressed = false;
+                          return GestureDetector(
+                            child: Text(
+                              link['title'] ?? 'Tautan',
+                              style: TextStyle(
+                                color: primary,
+                                decoration: isPressed
+                                    ? TextDecoration.underline
+                                    : TextDecoration.none,
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     );
                   }).toList(),
                 ),
-              ),
+              )
             ],
           ],
         ),
