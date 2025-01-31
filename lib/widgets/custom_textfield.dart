@@ -330,6 +330,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           prefixIcon: widget.prefix,
           suffixIcon: widget.inputType == InputType.password
               ? IconButton(
+                padding: EdgeInsets.zero,
                   icon: Icon(
                     _isObscured ? Icons.visibility : Icons.visibility_off,
                     color: isDisabled ? Colors.grey : _errorMessage != null ? errorColor : activeColor,
