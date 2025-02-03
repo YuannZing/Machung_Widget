@@ -1,11 +1,10 @@
-import 'package:component/widgets/custom.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class CustomCard extends StatelessWidget {
   final String title;
   final String content;
-  final double? width;
+  final double width;
   final Color backgroundColor;
   final EdgeInsetsGeometry padding;
   final EdgeInsetsGeometry margin;
@@ -14,17 +13,21 @@ class CustomCard extends StatelessWidget {
   final VoidCallback? onTap;
   final TextStyle? titleStyle;
   final TextStyle? contentStyle;
-  final String? imageUrl; // Gambar URL atau null jika pakai asset
-  final String? imageAsset; // Gambar lokal dari asset
+  final String? imageUrl;
+  final String? imageAsset;
   final double? imageHeight;
+  final double? imageWidth;
   final bool imageAboveText;
-  final List<Map<String, String>>? links; // Daftar tautan
+  final List<Map<String, String>>? links;
+  final Widget? bottomWidget;
+  final Widget? topWidget;
+  final double? height;
 
   const CustomCard({
     Key? key,
     required this.title,
     required this.content,
-    this.width,
+    this.width = 300,
     this.backgroundColor = Colors.white,
     this.padding = const EdgeInsets.all(16.0),
     this.margin = const EdgeInsets.all(8.0),
@@ -33,11 +36,15 @@ class CustomCard extends StatelessWidget {
     this.onTap,
     this.titleStyle,
     this.contentStyle,
-    this.imageUrl, // Untuk URL gambar
-    this.imageAsset, // Untuk gambar lokal
-    this.imageHeight = 150.0,
+    this.imageUrl,
+    this.imageAsset,
+    this.imageHeight,
+    this.imageWidth,
     this.imageAboveText = true,
-    this.links, // Tambahkan properti untuk tautan
+    this.links,
+    this.bottomWidget,
+    this.topWidget,
+    this.height = 85,
   }) : super(key: key);
 
   @override
@@ -62,58 +69,91 @@ class CustomCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (imageAboveText && (imageUrl != null || imageAsset != null)) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(borderRadius),
+            if (imageAboveText && (imageUrl != null || imageAsset != null))
+              SizedBox(
+                height:
+                    imageHeight ?? 150, // Menentukan ukuran pasti untuk Stack
+                width: imageWidth ?? double.infinity,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(borderRadius),
+                      ),
+                      child: imageAsset != null
+                          ? Image.asset(
+                              imageAsset!,
+                              fit: BoxFit.cover,
+                            )
+                          : Image.network(
+                              imageUrl!,
+                              fit: BoxFit.cover,
+                            ),
+                    ),
+                    if (topWidget != null && imageAboveText)
+                      Positioned(
+                        top: 10,
+                        left: 10,
+                        right: 10,
+                        child: topWidget!,
+                      ),
+                  ],
                 ),
-                child: imageAsset != null
-                    ? Image.asset(
-                        imageAsset!,
-                        height: imageHeight,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      )
-                    : Image.network(
-                        imageUrl!,
-                        height: imageHeight,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
               ),
-              SizedBox(height: 8),
-            ],
             if (!imageAboveText && (imageUrl != null || imageAsset != null))
-              Row(
+              Stack(
                 children: [
-                  if (imageAsset != null)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8.0),
-                      child: Image.asset(
-                        imageAsset!,
-                        height: imageHeight,
-                        width: imageHeight,
-                        fit: BoxFit.cover,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(borderRadius),
+                            bottomLeft: Radius.circular(borderRadius)),
+                        child: imageAsset != null
+                            ? Image.asset(
+                                imageAsset!,
+                                height: imageHeight ?? 100,
+                                width: imageWidth ?? 100,
+                                fit: BoxFit.cover,
+                              )
+                            : Image.network(
+                                imageUrl!,
+                                height: imageHeight ?? 100,
+                                width: imageWidth ?? 100,
+                                fit: BoxFit.cover,
+                              ),
                       ),
-                    ),
-                  if (imageUrl != null)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8.0),
-                      child: Image.network(
-                        imageUrl!,
-                        height: imageHeight,
-                        width: imageHeight,
-                        fit: BoxFit.cover,
+                      SizedBox(width: 12),
+                      Expanded(
+                        // Tambahkan ini agar teks tidak melebihi batas Card
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 0, right: 6),
+                          child: _buildTextContent(),
+                        ),
                       ),
+                    ],
+                  ),
+                  if (bottomWidget != null && !imageAboveText)
+                    Positioned(
+                      bottom: 10,
+                      right: 10,
+                      child: bottomWidget!,
                     ),
-                  SizedBox(width: 12),
                 ],
-              )
-            else
-              _buildTextContent(),
-            if (links != null && links!.isNotEmpty) ...[
+              ),
+            if (imageAboveText)
               Padding(
-                padding: EdgeInsets.only(left: padding.horizontal / 2, top: 0, bottom: padding.vertical / 2),
+                padding: padding,
+                child: _buildTextContent(),
+              ),
+            if (links != null && links!.isNotEmpty)
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: padding.horizontal / 2,
+                  vertical: padding.vertical / 2,
+                ),
                 child: Wrap(
                   spacing: 12.0,
                   alignment: WrapAlignment.start,
@@ -124,31 +164,29 @@ class CustomCard extends StatelessWidget {
                         final url = link['linkurl'];
                         if (url != null && url.isNotEmpty) {
                           final Uri uri = Uri.parse(url);
-                          print('Attempting to launch URL: $url');
                           launchUrl(uri, mode: LaunchMode.externalApplication);
                         }
                       },
-                      child: StatefulBuilder(
-                        builder: (context, setState) {
-                          bool isPressed = false;
-                          return GestureDetector(
-                            child: Text(
-                              link['title'] ?? 'Tautan',
-                              style: TextStyle(
-                                color: primary,
-                                decoration: isPressed
-                                    ? TextDecoration.underline
-                                    : TextDecoration.none,
-                              ),
-                            ),
-                          );
-                        },
+                      child: Text(
+                        link['title'] ?? 'Tautan',
+                        style: TextStyle(
+                          color: Colors.blue,
+                          decoration: TextDecoration.underline,
+                        ),
                       ),
                     );
                   }).toList(),
                 ),
-              )
-            ],
+              ),
+            if (bottomWidget != null && imageAboveText)
+              Padding(
+                padding: EdgeInsets.only(
+                    left: padding.horizontal / 2,
+                    top: 0,
+                    bottom: padding.vertical / 2,
+                    right: padding.horizontal / 2),
+                child: bottomWidget!,
+              ),
           ],
         ),
       ),
@@ -157,8 +195,9 @@ class CustomCard extends StatelessWidget {
 
   Widget _buildTextContent() {
     return Container(
-      padding: padding,
+      height: height,
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
@@ -166,7 +205,7 @@ class CustomCard extends StatelessWidget {
             style: titleStyle ??
                 TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 8),
+          // SizedBox(height: 8),
           Text(
             content,
             style: contentStyle ??
