@@ -70,22 +70,33 @@ class _CarouselScreenState extends State<CarouselScreen> {
                   content:
                       "Ma Chung University is an Indonesian private university located in Villa Puncak Tidar, Malang City, East Java. ",
                   topWidget: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      Container(
-                          padding:
-                              EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: Color.fromRGBO(5, 153, 227, 0.295),
-                            borderRadius: BorderRadius.all(
-                              Radius.circular(6),
+                      Padding(
+                        padding: const EdgeInsets.all(14.0),
+                        child: Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 5),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(5),
+                              gradient: LinearGradient(
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                                colors: [
+                                  Color.fromRGBO(0, 101, 176, 1),
+                                  Color.fromRGBO(1, 126, 216, 1),
+                                ],
+                              ),
                             ),
-                          ),
-                          child: Text(
-                            "Haloo0",
-                            style: TextStyle(
-                                color: Color.fromRGBO(113, 119, 122, 1)),
-                          )),
+                            child: Text(
+                              "General",
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 10),
+                            )),
+                      ),
                     ],
                   ),
                   imageUrl:
@@ -197,12 +208,42 @@ class _CarouselScreenState extends State<CarouselScreen> {
                   title: "Ma Chung Malang Hadirkan Prodi Profesi Apoteker ",
                   titleStyle:
                       TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                  content: "",
-                  imageHeight: 104,
+                  content:
+                      "Ma Chung University is an Indonesian private university located in Villa Puncak Tidar, Malang City, East Java. ",
+                  contentStyle: TextStyle(fontSize: 10, color: Colors.grey),
+                  imageHeight: 162,
+                  width: 354,
                   imageUrl:
                       "https://cdn.rri.co.id/berita/50/images/1683378478013-IMG_6589/1683378478013-IMG_6589.jpeg",
                   onTap: () {},
-                  imageAboveText: false,
+                  typeCard: 2,
+                  topWidget: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Container(
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(5),
+                            gradient: LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                              colors: [
+                                Color.fromRGBO(0, 101, 176, 1),
+                                Color.fromRGBO(1, 126, 216, 1),
+                              ],
+                            ),
+                          ),
+                          child: Text(
+                            "General",
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 10),
+                          )),
+                    ],
+                  ),
+                  // imageAboveText: false,
                   bottomWidget: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -230,6 +271,85 @@ class _CarouselScreenState extends State<CarouselScreen> {
                         style: TextStyle(
                             fontWeight: FontWeight.w600,
                             color: Color.fromRGBO(142, 175, 189, 1)),
+                      ),
+                    ],
+                  ),
+                ),
+                CustomCard(
+                  typeCard: 3,
+                  borderRadius: 10,
+                  width: 300,
+                  title: "Universitas Ma Chung",
+                  content:
+                      "Ma Chung University is an Indonesian private university located in Villa Puncak Tidar, Malang City, East Java. ",
+                  topWidget: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(14.0),
+                        child: Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 5),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(4),
+                              gradient: LinearGradient(
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                                colors: [
+                                  Color.fromRGBO(0, 101, 176, 1),
+                                  Color.fromRGBO(1, 126, 216, 1),
+                                ],
+                              ),
+                            ),
+                            child: Text(
+                              "General",
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 10),
+                            )),
+                      ),
+                    ],
+                  ),
+                  imageUrl:
+                      "https://cdn.rri.co.id/berita/50/images/1683378478013-IMG_6589/1683378478013-IMG_6589.jpeg", // Path ke gambar lokal
+                  onTap: () {
+                    print("Card dengan gambar lokal di-klik!");
+                  },
+                  bottomWidget: Row(
+                    mainAxisAlignment: MainAxisAlignment
+                        .end, // Meratakan ke kiri dan kanan
+                    children: [
+                      
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.access_time,
+                            color: Color.fromRGBO(167, 192, 203, 1),
+                            size: 16,
+                          ),
+                          Text(
+                            "1h ago",
+                            style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Color.fromRGBO(142, 175, 189, 1)),
+                          ),
+                          SizedBox(
+                            width: 15,
+                          ),
+                          Icon(
+                            Icons.remove_red_eye_outlined,
+                            color: Color.fromRGBO(167, 192, 203, 1),
+                            size: 16,
+                          ),
+                          Text(
+                            "2,781",
+                            style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Color.fromRGBO(142, 175, 189, 1)),
+                          ),
+                        ],
                       ),
                     ],
                   ),
