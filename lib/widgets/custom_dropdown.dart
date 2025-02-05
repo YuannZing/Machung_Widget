@@ -14,7 +14,7 @@ class Listdata {
 class CustomDropdown extends StatefulWidget {
   final List<Listdata> items;
   final String hint;
-  final ValueChanged<dynamic>? onChanged;
+  final ValueChanged<dynamic>? onChanged; // Bisa single atau multiple
   final Listdata? initialValue;
   final List<Listdata>? initialValues;
   final bool search;
@@ -28,7 +28,7 @@ class CustomDropdown extends StatefulWidget {
     this.initialValue,
     this.initialValues,
     this.search = false,
-    this.type = DropdownType.normal,
+    this.type = DropdownType.normal, // Default normal
   }) : super(key: key);
 
   @override
@@ -81,27 +81,54 @@ class _CustomDropdownState extends State<CustomDropdown> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.blueAccent),
             ),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 4,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                ...selectedValues.map((item) => Chip(
-                      label: Text(item.text),
-                      onDeleted: () {
-                        setState(() {
-                          selectedValues.remove(item);
-                        });
-                        if (widget.onChanged != null) {
-                          widget.onChanged!(selectedValues);
-                        }
-                      },
-                    )),
-                if (selectedValues.isEmpty)
-                  Text(
-                    widget.hint,
-                    style: TextStyle(color: Colors.grey),
+                Expanded(
+                  child: Column(
+                    children: [
+                      // buat if jika type multiple select
+                      if (widget.type == DropdownType.multipleSelect)
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: selectedValues
+                              .map((e) => Chip(
+                                    label: Text(e.text),
+                                    onDeleted: () {
+                                      setState(() {
+                                        selectedValues.remove(e);
+                                      });
+                                      if (widget.onChanged != null) {
+                                        widget.onChanged!(selectedValues);
+                                      }
+                                    },
+                                  ))
+                              .toList(),
+                        ),
+                      if (widget.search)
+                        TextField(
+                          controller: searchController,
+                          decoration: InputDecoration(
+                            hintText: widget.hint,
+                            border: InputBorder.none,
+                          ),
+                          onChanged: _filterItems,
+                          onTap: _toggleDropdown,
+                        )
+                      else
+                        widget.type == DropdownType.multipleSelect
+                            ? Text(selectedValues.isEmpty
+                                ? widget.hint
+                                : "${selectedValues.length} item dipilih")
+                            : Text(selectedValue?.text ?? widget.hint),
+                    ],
                   ),
-                Icon(Icons.arrow_drop_down, color: Colors.blue),
+                ),
+                if (isDropdownOpen)
+                  Icon(Icons.arrow_drop_down, color: Colors.blue)
+                else
+                  Icon(Icons.arrow_drop_up, color: Colors.blue),
               ],
             ),
           ),
@@ -117,6 +144,8 @@ class _CustomDropdownState extends State<CustomDropdown> {
             ),
             child: Column(
               children: filteredItems.map((Listdata item) {
+                bool isSelected = selectedValues.contains(item);
+
                 return ListTile(
                   leading: item.prefix != null
                       ? Icon(item.prefix, color: Colors.blue)
@@ -132,7 +161,7 @@ class _CustomDropdownState extends State<CustomDropdown> {
                   onTap: () {
                     if (widget.type == DropdownType.multipleSelect) {
                       setState(() {
-                        if (selectedValues.contains(item)) {
+                        if (isSelected) {
                           selectedValues.remove(item);
                         } else {
                           selectedValues.add(item);
