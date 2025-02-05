@@ -234,7 +234,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           suffixIcon: widget.inputType == InputType.password
               ? IconButton(
                   icon: Icon(
-                    _isObscured ? Icons.visibility : Icons.visibility_off,
+                    _isObscured ? Icons.visibility_off : Icons.visibility,
                     color: isDisabled ? Colors.grey : Colors.black54,
                   ),
                   onPressed: isDisabled
@@ -283,7 +283,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           suffixIcon: widget.inputType == InputType.password
               ? IconButton(
                   icon: Icon(
-                    _isObscured ? Icons.visibility : Icons.visibility_off,
+                    _isObscured ? Icons.visibility_off : Icons.visibility,
                     color: isDisabled ? Colors.grey : Colors.black54,
                   ),
                   onPressed: isDisabled
@@ -332,7 +332,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
               ? IconButton(
                 padding: EdgeInsets.zero,
                   icon: Icon(
-                    _isObscured ? Icons.visibility : Icons.visibility_off,
+                    _isObscured ? Icons.visibility_off : Icons.visibility,
                     color: isDisabled ? Colors.grey : _errorMessage != null ? errorColor : activeColor,
                   ),
                   onPressed: isDisabled
