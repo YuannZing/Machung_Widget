@@ -2,24 +2,11 @@ import 'package:flutter/material.dart';
 import 'widgets/custom.dart';
 
 List<Listdata> dropdownItems = [
-  Listdata(
-    // prefix: Icons.home,
-    text: "Beranda",
-    // subtext: "Halaman utama",
-    // suffix: Icons.check,
-  ),
-  Listdata(
-    // prefix: Icons.settings,
-    text: "Pengaturan",
-    subtext: "Atur aplikasi",
-    // suffix: Icons.check,
-  ),
-  Listdata(
-    // prefix: Icons.person,
-    text: "Profil",
-    subtext: "Lihat informasi akun",
-    suffix: Icons.check,
-  ),
+  Listdata(text: "Beranda"),
+  Listdata(text: "Benda"),
+  Listdata(text: "Auuuuu"),
+  Listdata(text: "Pengaturan", subtext: "Atur aplikasi"),
+  Listdata(prefix: Icons.person,text: "Profil", subtext: "Lihat informasi akun", suffix: Icons.import_contacts),
 ];
 
 class DropDown extends StatefulWidget {
@@ -28,10 +15,12 @@ class DropDown extends StatefulWidget {
 }
 
 class _DropDownState extends State<DropDown> {
+  List<Listdata> selectedItems = []; // Menyimpan item yang dipilih
+
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 50),
+      padding: const EdgeInsets.symmetric(vertical: 50, horizontal: 30),
       child: Column(
         children: [
           CustomDropdown(
@@ -40,11 +29,15 @@ class _DropDownState extends State<DropDown> {
             search: true,
             type: DropdownType.multipleSelect,
             onChanged: (value) {
-              print("Item yang dipilih: $value");
-              print("Data: $value");
-              print("Tipe data: ${value.runtimeType}");
+              setState(() {
+                selectedItems = value; // Update state saat ada perubahan
+              });
             },
-              
+          ),
+          SizedBox(height: 20),
+          Text(
+            "Dipilih: ${selectedItems.map((e) => e.toJson()).toList()}",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ],
       ),
