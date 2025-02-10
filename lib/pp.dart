@@ -9,26 +9,45 @@ class Listdata {
   final IconData? suffix;
 
   Listdata({this.prefix, required this.text, this.subtext, this.suffix});
+  // Definisikan toJson() agar bisa dikonversi ke Map<String, dynamic>
+  Map<String, dynamic> toJson() {
+    return {
+      'text': text,
+      'subtext': subtext,
+    };
+  }
+}
+
+enum DropdownStyle {
+  outlined,
+  filled,
+  standard,
 }
 
 class CustomDropdown extends StatefulWidget {
   final List<Listdata> items;
   final String hint;
-  final ValueChanged<dynamic>? onChanged;
+  final ValueChanged<List<Listdata>>? onChanged; // Bisa single atau multiple
+  final Function? onChanged2;
   final Listdata? initialValue;
   final List<Listdata>? initialValues;
   final bool search;
   final DropdownType type;
+  final DropdownStyle style; // Tambahkan parameter style
+
 
   const CustomDropdown({
     Key? key,
     required this.items,
     this.hint = "Pilih item",
     this.onChanged,
+    this.onChanged2,
     this.initialValue,
     this.initialValues,
     this.search = false,
-    this.type = DropdownType.normal,
+    this.type = DropdownType.normal, // Default normal
+    this.style = DropdownStyle.standard, // Default style
+
   }) : super(key: key);
 
   @override
@@ -68,71 +87,105 @@ class _CustomDropdownState extends State<CustomDropdown> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        GestureDetector(
-          onTap: _toggleDropdown,
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blueAccent),
-            ),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: [
-                ...selectedValues.map((item) => Chip(
-                      label: Text(item.text),
-                      onDeleted: () {
-                        setState(() {
-                          selectedValues.remove(item);
-                        });
-                        if (widget.onChanged != null) {
-                          widget.onChanged!(selectedValues);
-                        }
-                      },
-                    )),
-                if (selectedValues.isEmpty)
-                  Text(
-                    widget.hint,
-                    style: TextStyle(color: Colors.grey),
+Widget build(BuildContext context) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      GestureDetector(
+        onTap: _toggleDropdown,
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: widget.style == DropdownStyle.filled
+                ? Colors.blue[50] // Warna latar untuk filled
+                : Colors.white,
+            borderRadius: widget.style == DropdownStyle.outlined
+                ? BorderRadius.circular(8) // Border radius untuk outlined
+                : null,
+            border: widget.style == DropdownStyle.outlined
+                ? Border.all(color: Colors.blue, width: 2) // Border untuk outlined
+                : Border(
+                    bottom: BorderSide(
+                      color: Colors.grey,
+                      width: 2,
+                    ),
                   ),
-                Icon(Icons.arrow_drop_down, color: Colors.blue),
-              ],
-            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (widget.type == DropdownType.multipleSelect)
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: selectedValues
+                              .map((e) => Chip(
+                                    label: Text(e.text),
+                                    onDeleted: () {
+                                      setState(() {
+                                        selectedValues.remove(e);
+                                      });
+                                      if (widget.onChanged != null) {
+                                        widget.onChanged!(selectedValues);
+                                      }
+                                    },
+                                  ))
+                              .toList(),
+                        ),
+                      ),
+                    if (widget.search)
+                      SizedBox(
+                        width: 200,
+                        child: TextField(
+                          controller: searchController,
+                          decoration: InputDecoration(
+                            hintText: widget.hint,
+                            border: InputBorder.none,
+                          ),
+                          onChanged: _filterItems,
+                          onTap: _toggleDropdown,
+                        ),
+                      )
+                    else
+                      Text(
+                        widget.type == DropdownType.multipleSelect
+                            ? (selectedValues.isEmpty
+                                ? widget.hint
+                                : "${selectedValues.length} item dipilih")
+                            : (selectedValue?.text ?? widget.hint),
+                      ),
+                  ],
+                ),
+              ),
+              if (isDropdownOpen)
+                Icon(Icons.arrow_drop_down, color: Colors.blue)
+              else
+                Icon(Icons.arrow_drop_up, color: Colors.blue),
+            ],
           ),
         ),
-        if (isDropdownOpen)
-          Container(
-            margin: EdgeInsets.only(top: 4),
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blueAccent),
-            ),
-            child: Column(
-              children: filteredItems.map((Listdata item) {
-                return ListTile(
-                  leading: item.prefix != null
-                      ? Icon(item.prefix, color: Colors.blue)
-                      : null,
-                  title: Text(item.text),
-                  subtitle: item.subtext != null
-                      ? Text(item.subtext!,
-                          style: TextStyle(fontSize: 12, color: Colors.grey))
-                      : null,
-                  trailing: item.suffix != null
-                      ? Icon(item.suffix, color: Colors.blue)
-                      : null,
+      ),
+      if (isDropdownOpen)
+        Container(
+          child: Column(
+            children: filteredItems.map((Listdata item) {
+              bool isSelected = selectedValues.contains(item);
+              return Container(
+                height: 40,
+                decoration: BoxDecoration(
+                  color: isSelected ? Colors.blue[200] : Colors.white,
+                ),
+                child: InkWell(
                   onTap: () {
                     if (widget.type == DropdownType.multipleSelect) {
                       setState(() {
-                        if (selectedValues.contains(item)) {
+                        if (isSelected) {
                           selectedValues.remove(item);
                         } else {
                           selectedValues.add(item);
@@ -148,15 +201,40 @@ class _CustomDropdownState extends State<CustomDropdown> {
                         isDropdownOpen = false;
                       });
                       if (widget.onChanged != null) {
-                        widget.onChanged!(item);
+                        widget.onChanged!([item]);
                       }
                     }
                   },
-                );
-              }).toList(),
-            ),
+                  child: Row(
+                    children: [
+                      if (item.prefix != null)
+                        Icon(item.prefix, color: Colors.blue),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(item.text),
+                              if (item.subtext != null)
+                                Text(item.subtext!,
+                                    style: TextStyle(
+                                        fontSize: 12, color: Colors.grey))
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (item.suffix != null)
+                        Icon(item.suffix, color: Colors.blue),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
           ),
-      ],
-    );
-  }
+        ),
+    ],
+  );
+}
 }
