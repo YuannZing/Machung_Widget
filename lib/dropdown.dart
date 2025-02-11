@@ -36,7 +36,7 @@ class _DropDownState extends State<DropDown> {
           CustomDropdown(
             items: dropdownItems,
             hint: "Pilih Teknologi",
-            // search: true,
+            search: true,
             type: DropdownType.multipleSelect,
             // style: DropdownStyle.filled,
             onChanged: (value) {

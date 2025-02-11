@@ -97,6 +97,10 @@ class _CustomDropdownState extends State<CustomDropdown>
                   item.subtext!.toLowerCase().contains(query.toLowerCase())))
           .toList();
     });
+    _removeOverlay(); // Hapus overlay lama
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showOverlay(); // Buat ulang overlay dengan item yang sudah difilter
+    });
   }
 
   void _toggleDropdown() {
@@ -108,7 +112,7 @@ class _CustomDropdownState extends State<CustomDropdown>
   }
 
   void _showOverlay() {
-    Future.delayed(Duration.zero, () {
+    // Future.delayed(Duration.zero, () {
       RenderBox renderBox = context.findRenderObject() as RenderBox;
       // RenderBox renderBox = containerKey.currentContext!.findRenderObject() as RenderBox;
       Offset offset = renderBox.localToGlobal(Offset.zero);
@@ -118,99 +122,165 @@ class _CustomDropdownState extends State<CustomDropdown>
       overlayEntry = OverlayEntry(
         builder: (context) => Stack(
           children: [
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: _removeOverlay,
-                behavior: HitTestBehavior.translucent,
-                child: Container(),
-              ),
-            ),
             Positioned(
-              left: offset.dx,
-              top: offset.dy + size.height,
-              width: size.width,
-              child: Material(
-                color: Colors.transparent,
-                child: FadeTransition(
-                  opacity: fadeAnimation,
-                  child: SlideTransition(
-                    position: slideAnimation,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 5,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxHeight: widget.items.length > 3
-                              ? 150
-                              : double.infinity, // Maks 3 item sebelum scroll
-                        ),
-                        child: SingleChildScrollView(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: widget.items.map((item) {
-                              bool isSelected = selectedValues.contains(item);
+              left: 0,
+              top: 0,
+              right: 0,
+              bottom: 0,
+              child: Stack(
+                children: [
+                  // Ini overlay yang menangkap tap di luar padding container
+                  Positioned(
+                    left: 0, // Hanya bagian kiri yang terbuka
+                    width: offset.dx,
+                    top: 0,
+                    bottom: 0,
+                    child: GestureDetector(
+                      onTap: _removeOverlay,
+                      behavior: HitTestBehavior.translucent,
+                      child: Container(),
+                    ),
+                  ),
+                  Positioned(
+                    right: 0, // Hanya bagian kiri yang terbuka
+                    width: offset.dx,
+                    top: 0,
+                    bottom: 0,
+                    child: GestureDetector(
+                      onTap: _removeOverlay,
+                      behavior: HitTestBehavior.translucent,
+                      child: Container(),
+                    ),
+                  ),
+                  Positioned(
+                    left: 0, // Hanya bagian kiri yang terbuka
+                    height: offset.dy,
+                    right: 0,
+                    top: 0,
+                    child: GestureDetector(
+                      onTap: _removeOverlay,
+                      behavior: HitTestBehavior.translucent,
+                      child: Container(),
+                    ),
+                  ),
+                  Positioned(
+                    left: 0, // Hanya bagian kiri yang terbuka
+                    top: offset.dy + size.height,
+                    right: 0,
+                    bottom: 0,
+                    child: GestureDetector(
+                      onTap: _removeOverlay,
+                      behavior: HitTestBehavior.translucent,
+                      child: Container(),
+                    ),
+                  ),
 
-                              return InkWell(
-                                onTap: () {
-                                  if (widget.type ==
-                                      DropdownType.multipleSelect) {
-                                    setState(() {
-                                      if (isSelected) {
-                                        selectedValues.remove(item);
-                                      } else {
-                                        selectedValues.add(item);
-                                      }
-                                    });
-                                    widget.onChanged?.call(selectedValues);
-                                    _showOverlay(); // Update posisi overlay agar item yang dipilih terlihat
-                                  } else {
-                                    setState(() {
-                                      selectedValue = item;
-                                      searchController.text = item.text;
-                                      // isDropdownOpen = false;
-                                    });
-                                    widget.onChanged?.call([item]);
-                                    _removeOverlay(); // Pastikan overlay ditutup setelah memilih item di mode normal
-                                  }
-                                },
-                                child: Container(
-                                  color: isSelected
-                                      ? Colors.blue.withOpacity(0.2)
-                                      : Colors.transparent,
-                                  padding: const EdgeInsets.all(12),
-                                  child: Row(
-                                    children: [
-                                      if (item.prefix != null)
-                                        Icon(item.prefix, color: Colors.blue),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(item.text),
-                                      ),
-                                      if (item.suffix != null)
-                                        Icon(item.suffix, color: Colors.blue),
-                                    ],
-                                  ),
+                  Positioned(
+                    left: offset.dx,
+                    top: offset.dy + size.height,
+                    width: size.width,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: FadeTransition(
+                        opacity: fadeAnimation,
+                        child: SlideTransition(
+                          position: slideAnimation,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.blue),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 5,
+                                  offset: Offset(0, 2),
                                 ),
-                              );
-                            }).toList(),
+                              ],
+                            ),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxHeight: widget.items.length > 3
+                                    ? 150
+                                    : double
+                                        .infinity, // Maks 3 item sebelum scroll
+                              ),
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children:  widget.items.map((item) {
+                                    bool isSelected =
+                                        selectedValues.contains(item);
+
+                                    return InkWell(
+                                      onTap: () {
+                                        if (widget.type ==
+                                            DropdownType.multipleSelect) {
+                                          setState(() {
+                                            if (isSelected) {
+                                              selectedValues.remove(item);
+                                            } else {
+                                              selectedValues.add(item);
+                                            }
+                                          });
+
+                                          if (widget.onChanged != null) {
+                                            widget.onChanged!(selectedValues);
+                                          }
+
+                                          _removeOverlay(); // Hapus overlay lama agar tidak tertinggal di posisi lama
+
+                                          /// Pastikan overlay dibuat ulang setelah perubahan UI selesai
+                                          WidgetsBinding.instance
+                                              .addPostFrameCallback((_) {
+                                            _showOverlay();
+                                          });
+                                        } else {
+                                          setState(() {
+                                            selectedValue = item;
+                                            searchController.text = item.text;
+                                          });
+
+                                          if (widget.onChanged != null) {
+                                            widget.onChanged!([item]);
+                                          }
+
+                                          _removeOverlay(); // Hapus overlay hanya untuk single select
+                                        }
+                                      },
+                                      child: Container(
+                                        color: isSelected
+                                            ? Colors.blue.withOpacity(0.2)
+                                            : Colors.transparent,
+                                        padding: const EdgeInsets.all(12),
+                                        child: Row(
+                                          children: [
+                                            if (item.prefix != null)
+                                              Icon(item.prefix,
+                                                  color: Colors.blue),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(item.text),
+                                            ),
+                                            if (item.suffix != null)
+                                              Icon(item.suffix,
+                                                  color: Colors.blue),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
-            ),
+            )
           ],
         ),
       );
@@ -220,7 +290,7 @@ class _CustomDropdownState extends State<CustomDropdown>
       setState(() {
         isDropdownOpen = true;
       });
-    });
+    
   }
 
   void _removeOverlay() {
@@ -280,6 +350,13 @@ class _CustomDropdownState extends State<CustomDropdown>
                                 onDeleted: () {
                                   setState(() {
                                     selectedValues.remove(e);
+                                    if (isDropdownOpen)
+
+                                      /// Pastikan overlay dibuat ulang setelah perubahan UI selesai
+                                      WidgetsBinding.instance
+                                          .addPostFrameCallback((_) {
+                                        _showOverlay();
+                                      });
                                   });
                                   widget.onChanged?.call(selectedValues);
                                 },
@@ -290,16 +367,18 @@ class _CustomDropdownState extends State<CustomDropdown>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       if (widget.search)
-                        TextField(
-                          controller: searchController,
-                          decoration: InputDecoration(
-                            hintText: widget.hint,
-                            border: InputBorder.none,
+                        Expanded(
+                          child: TextField(
+                            controller: searchController,
+                            decoration: InputDecoration(
+                              hintText: widget.hint,
+                              border: InputBorder.none,
+                            ),
+                            onChanged: _filterItems,
+                            onTap: () {
+                              if (!isDropdownOpen) _toggleDropdown();
+                            },
                           ),
-                          onChanged: _filterItems,
-                          onTap: () {
-                            if (!isDropdownOpen) _toggleDropdown();
-                          },
                         )
                       else
                         Text(
