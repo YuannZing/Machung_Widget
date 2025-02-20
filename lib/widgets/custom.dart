@@ -9,4 +9,6 @@ export 'custom_textfield.dart';
 export 'custom_card.dart';
 export 'custom_carousel.dart';
 export 'custom_dropdown.dart';
+export 'custom_table.dart';
+export 'custom_progressbar.dart';
 // tambahkan widget lain sesuai kebutuhan
