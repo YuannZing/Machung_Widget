@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Private & Global Chat</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        #messages { border: 1px solid #ccc; padding: 10px; width: 50%; margin: auto; height: 300px; overflow-y: auto; }
+        input, button { margin-top: 10px; padding: 8px; }
+    </style>
+</head>
+<body>
+
+    <h2>WebSocket Chat</h2>
+    <label for="userId">Masukkan ID Anda:</label>
+    <input type="text" id="userId" placeholder="Contoh: user123" />
+    <button onclick="registerUser()">Daftar</button>
+
+    <h3>Pesan Masuk</h3>
+    <div id="messages"></div>
+
+    <h3>Kirim Pesan</h3>
+    <input type="text" id="messageInput" placeholder="Ketik pesan..." />
+    <button onclick="sendBroadcast()">Kirim Global</button>
+
+    <h3>Private Chat</h3>
+    <input type="text" id="targetUser" placeholder="ID Tujuan" />
+    <button onclick="sendPrivate()">Kirim Private</button>
+
+    <script>
+        let socket = new WebSocket("ws://10.50.2.128:8080");
+        let userId = "";
+
+        socket.onopen = function() {
+            console.log("Terhubung ke WebSocket!");
+        };
+
+        socket.onmessage = function(event) {
+            let data = JSON.parse(event.data);
+            let msgBox = document.getElementById("messages");
+
+            if (data.event === "global_message") {
+                msgBox.innerHTML += `<p><strong>[Global]</strong> ${data.from}: ${data.message}</p>`;
+            } 
+            else if (data.event === "private_message") {
+                msgBox.innerHTML += `<p><strong>[Private]</strong> ${data.from}: ${data.message}</p>`;
+            } 
+            else if (data.event === "error") {
+                alert(data.message);
+            }
+
+            msgBox.scrollTop = msgBox.scrollHeight;
+        };
+
+        function registerUser() {
+            userId = document.getElementById("userId").value;
+            if (userId.trim() !== "") {
+                socket.send(JSON.stringify({ type: "register", user_id: userId }));
+                alert(`ID ${userId} telah terdaftar`);
+            } else {
+                alert("Masukkan ID Anda terlebih dahulu.");
+            }
+        }
+
+        function sendBroadcast() {
+            let message = document.getElementById("messageInput").value;
+            if (message.trim() !== "") {
+                socket.send(JSON.stringify({ type: "broadcast", message: message }));
+                document.getElementById("messageInput").value = "";
+            } else {
+                alert("Ketik pesan untuk broadcast!");
+            }
+        }
+
+        function sendPrivate() {
+            let message = document.getElementById("messageInput").value;
+            let targetUser = document.getElementById("targetUser").value;
+
+            if (message.trim() !== "" && targetUser.trim() !== "") {
+                socket.send(JSON.stringify({ type: "send_to_user", user_id: targetUser, message: message }));
+                document.getElementById("messageInput").value = "";
+            } else {
+                alert("Isi ID tujuan dan pesan!");
+            }
+        }
+    </script>
+
+</body>
+</html>

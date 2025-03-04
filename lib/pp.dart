@@ -1,240 +1,150 @@
 import 'package:flutter/material.dart';
 
-enum DropdownType { normal, multipleSelect }
+class ScrollableTable extends StatefulWidget {
+  final List<String> headers;
+  final List<String> firstColumn; // First Column (Frozen)
+  final List<List<String>> data;
 
-class Listdata {
-  final IconData? prefix;
-  final String text;
-  final String? subtext;
-  final IconData? suffix;
-
-  Listdata({this.prefix, required this.text, this.subtext, this.suffix});
-  // Definisikan toJson() agar bisa dikonversi ke Map<String, dynamic>
-  Map<String, dynamic> toJson() {
-    return {
-      'text': text,
-      'subtext': subtext,
-    };
-  }
-}
-
-enum DropdownStyle {
-  outlined,
-  filled,
-  standard,
-}
-
-class CustomDropdown extends StatefulWidget {
-  final List<Listdata> items;
-  final String hint;
-  final ValueChanged<List<Listdata>>? onChanged; // Bisa single atau multiple
-  final Function? onChanged2;
-  final Listdata? initialValue;
-  final List<Listdata>? initialValues;
-  final bool search;
-  final DropdownType type;
-  final DropdownStyle style; // Tambahkan parameter style
-
-
-  const CustomDropdown({
-    Key? key,
-    required this.items,
-    this.hint = "Pilih item",
-    this.onChanged,
-    this.onChanged2,
-    this.initialValue,
-    this.initialValues,
-    this.search = false,
-    this.type = DropdownType.normal, // Default normal
-    this.style = DropdownStyle.standard, // Default style
-
-  }) : super(key: key);
+  ScrollableTable({
+    required this.headers,
+    required this.firstColumn,
+    required this.data,
+  });
 
   @override
-  _CustomDropdownState createState() => _CustomDropdownState();
+  _ScrollableTableState createState() => _ScrollableTableState();
 }
 
-class _CustomDropdownState extends State<CustomDropdown> {
-  Listdata? selectedValue;
-  List<Listdata> selectedValues = [];
-  List<Listdata> filteredItems = [];
-  TextEditingController searchController = TextEditingController();
-  bool isDropdownOpen = false;
+class _ScrollableTableState extends State<ScrollableTable> {
+  final ScrollController _horizontalScrollController = ScrollController();
+  final ScrollController _horizontalHeaderScrollController = ScrollController();
+  final ScrollController _verticalScrollController = ScrollController();
+  final ScrollController _verticalFirstColumnScrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    selectedValue = widget.initialValue;
-    selectedValues = widget.initialValues ?? [];
-    filteredItems = widget.items;
-  }
-
-  void _filterItems(String query) {
-    setState(() {
-      filteredItems = widget.items
-          .where((item) =>
-              item.text.toLowerCase().contains(query.toLowerCase()) ||
-              (item.subtext != null &&
-                  item.subtext!.toLowerCase().contains(query.toLowerCase())))
-          .toList();
+    // Sinkronisasi scroll horizontal header dengan isi tabel
+    _horizontalScrollController.addListener(() {
+      _horizontalHeaderScrollController.jumpTo(_horizontalScrollController.offset);
     });
-  }
 
-  void _toggleDropdown() {
-    setState(() {
-      isDropdownOpen = !isDropdownOpen;
+    // Sinkronisasi scroll vertikal first column dengan isi tabel
+    _verticalScrollController.addListener(() {
+      _verticalFirstColumnScrollController.jumpTo(_verticalScrollController.offset);
     });
   }
 
   @override
-Widget build(BuildContext context) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      GestureDetector(
-        onTap: _toggleDropdown,
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: widget.style == DropdownStyle.filled
-                ? Colors.blue[50] // Warna latar untuk filled
-                : Colors.white,
-            borderRadius: widget.style == DropdownStyle.outlined
-                ? BorderRadius.circular(8) // Border radius untuk outlined
-                : null,
-            border: widget.style == DropdownStyle.outlined
-                ? Border.all(color: Colors.blue, width: 2) // Border untuk outlined
-                : Border(
-                    bottom: BorderSide(
-                      color: Colors.grey,
-                      width: 2,
-                    ),
-                  ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
+  void dispose() {
+    _horizontalScrollController.dispose();
+    _horizontalHeaderScrollController.dispose();
+    _verticalScrollController.dispose();
+    _verticalFirstColumnScrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        // First Column (Frozen Horizontal)
+        Column(
+          children: [
+            _buildHeaderCell(""), // Header kosong agar sejajar dengan header utama
+            Expanded(
+              child: SingleChildScrollView(
+                controller: _verticalFirstColumnScrollController, // Sinkronkan scroll vertikal
+                scrollDirection: Axis.vertical,
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (widget.type == DropdownType.multipleSelect)
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: selectedValues
-                              .map((e) => Chip(
-                                    label: Text(e.text),
-                                    onDeleted: () {
-                                      setState(() {
-                                        selectedValues.remove(e);
-                                      });
-                                      if (widget.onChanged != null) {
-                                        widget.onChanged!(selectedValues);
-                                      }
-                                    },
-                                  ))
-                              .toList(),
-                        ),
-                      ),
-                    if (widget.search)
-                      SizedBox(
-                        width: 200,
-                        child: TextField(
-                          controller: searchController,
-                          decoration: InputDecoration(
-                            hintText: widget.hint,
-                            border: InputBorder.none,
-                          ),
-                          onChanged: _filterItems,
-                          onTap: _toggleDropdown,
-                        ),
-                      )
-                    else
-                      Text(
-                        widget.type == DropdownType.multipleSelect
-                            ? (selectedValues.isEmpty
-                                ? widget.hint
-                                : "${selectedValues.length} item dipilih")
-                            : (selectedValue?.text ?? widget.hint),
-                      ),
-                  ],
+                  children: widget.firstColumn.map((text) => _buildFirstColumnCell(text)).toList(),
                 ),
               ),
-              if (isDropdownOpen)
-                Icon(Icons.arrow_drop_down, color: Colors.blue)
-              else
-                Icon(Icons.arrow_drop_up, color: Colors.blue),
+            ),
+          ],
+        ),
+        // Tabel Utama
+        Expanded(
+          child: Column(
+            children: [
+              // Header Table (Frozen)
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                controller: _horizontalHeaderScrollController,
+                child: Row(
+                  children: widget.headers.map((header) => _buildHeaderCell(header)).toList(),
+                ),
+              ),
+              Divider(height: 1, color: Colors.black),
+              // Isi Table (Scrollable)
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  controller: _horizontalScrollController,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.vertical,
+                    controller: _verticalScrollController,
+                    child: Column(
+                      children: widget.data.map((row) => _buildDataRow(row)).toList(),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
+      ],
+    );
+  }
+
+  // Widget untuk First Column
+  Widget _buildFirstColumnCell(String text) {
+    return Container(
+      width: 100,
+      padding: EdgeInsets.all(12),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.black, width: 1),
+        color: Colors.grey[200],
       ),
-      if (isDropdownOpen)
-        Container(
-          child: Column(
-            children: filteredItems.map((Listdata item) {
-              bool isSelected = selectedValues.contains(item);
-              return Container(
-                height: 40,
-                decoration: BoxDecoration(
-                  color: isSelected ? Colors.blue[200] : Colors.white,
-                ),
-                child: InkWell(
-                  onTap: () {
-                    if (widget.type == DropdownType.multipleSelect) {
-                      setState(() {
-                        if (isSelected) {
-                          selectedValues.remove(item);
-                        } else {
-                          selectedValues.add(item);
-                        }
-                      });
-                      if (widget.onChanged != null) {
-                        widget.onChanged!(selectedValues);
-                      }
-                    } else {
-                      setState(() {
-                        selectedValue = item;
-                        searchController.text = item.text;
-                        isDropdownOpen = false;
-                      });
-                      if (widget.onChanged != null) {
-                        widget.onChanged!([item]);
-                      }
-                    }
-                  },
-                  child: Row(
-                    children: [
-                      if (item.prefix != null)
-                        Icon(item.prefix, color: Colors.blue),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(item.text),
-                              if (item.subtext != null)
-                                Text(item.subtext!,
-                                    style: TextStyle(
-                                        fontSize: 12, color: Colors.grey))
-                            ],
-                          ),
-                        ),
-                      ),
-                      if (item.suffix != null)
-                        Icon(item.suffix, color: Colors.blue),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-    ],
-  );
-}
+      child: Text(text, style: TextStyle(fontWeight: FontWeight.bold)),
+    );
+  }
+
+  // Widget untuk Header
+  Widget _buildHeaderCell(String text) {
+    return Container(
+      width: 100,
+      padding: EdgeInsets.all(12),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.black, width: 1),
+        color: Colors.grey[300],
+      ),
+      child: Text(
+        text,
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  // Widget untuk satu baris data
+  Widget _buildDataRow(List<String> row) {
+    return Row(
+      children: row.map((cell) => _buildDataCell(cell)).toList(),
+    );
+  }
+
+  // Widget untuk isi data
+  Widget _buildDataCell(String text) {
+    return Container(
+      width: 100,
+      padding: EdgeInsets.all(12),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.black, width: 1),
+      ),
+      child: Text(text),
+    );
+  }
 }

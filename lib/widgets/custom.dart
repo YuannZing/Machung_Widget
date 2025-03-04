@@ -11,4 +11,7 @@ export 'custom_carousel.dart';
 export 'custom_dropdown.dart';
 export 'custom_table.dart';
 export 'custom_progressbar.dart';
+export 'custom_checkbox.dart';
+export 'custom_pagination.dart';
+export 'custom_slider.dart';
 // tambahkan widget lain sesuai kebutuhan
